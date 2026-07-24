@@ -2,9 +2,9 @@ using UnityEngine;
 
 public class ActionPickupItem : MonoBehaviour, IAction
 {
-    [SerializeField] private PickupItem targetItem;
-    [SerializeField] private PlayerInventory cachedInventory;
-    [SerializeField] private Transform throwDirectionTransform;
+    private PickupItem targetItem;
+    private PlayerInventory cachedInventory;
+    private Transform throwDirectionTransform;
 
     private void Awake()
     {
@@ -12,6 +12,8 @@ public class ActionPickupItem : MonoBehaviour, IAction
         {
             targetItem = GetComponent<PickupItem>();
         }
+        
+        
     }
 
     public void StartAction()
@@ -30,6 +32,8 @@ public class ActionPickupItem : MonoBehaviour, IAction
 
         if (cachedInventory == null)
             return;
+
+        throwDirectionTransform = Camera.main.transform;
 
         if (cachedInventory.HasItem)
         {

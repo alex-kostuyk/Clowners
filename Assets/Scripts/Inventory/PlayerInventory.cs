@@ -42,6 +42,10 @@ public class PlayerInventory : MonoBehaviour
     [SerializeField] private float swayMaxRotOffset = 4f;
     [SerializeField] private float swaySmoothing = 12f;
 
+    [Header("Anti-Clipping Settings")]
+    [SerializeField] private LayerMask obstacleLayerMask = 1; // Default layer. Set this to include your walls/floors.
+    [SerializeField] private float itemCollisionRadius = 0.15f; // How thick the item is to prevent clipping.
+
     private InventoryState currentState = InventoryState.Empty;
     private PickupItem currentlyHeldItem;
 
@@ -122,16 +126,15 @@ public class PlayerInventory : MonoBehaviour
             return;
         }
 
-        // Compute frame deltas for bob & sway tracking
         Vector3 rawTargetPos = targetTransform.position;
         Quaternion rawTargetRot = targetTransform.rotation;
+        Vector3 desiredPos = rawTargetPos;
 
         if (currentState == InventoryState.Holding)
         {
             float dt = Time.deltaTime;
             if (dt > 0f)
             {
-                // Measure position speed (m/s) and smooth it to avoid KCC jitter
                 float frameSpeed = (rawTargetPos - lastTargetPos).magnitude / dt;
                 smoothedSpeed = Mathf.Lerp(smoothedSpeed, frameSpeed, dt * 10f);
 
@@ -141,21 +144,17 @@ public class PlayerInventory : MonoBehaviour
 
                 if (currentBobWeight > 0f)
                 {
-                    // Clamp walk intensity scale [0.5, 1.5] so high speeds / sprints do not exaggerate bob wildly
                     float speedFactor = Mathf.Clamp(smoothedSpeed / 4f, 0.5f, 1.5f);
                     bobTimer += dt * bobSpeedMultiplier * speedFactor;
                 }
 
-                // Camera-turn sway: measure rotation angle deltas
                 Quaternion rotDelta = rawTargetRot * Quaternion.Inverse(lastTargetRot);
                 rotDelta.ToAngleAxis(out float angle, out Vector3 axis);
                 if (angle > 180f) angle -= 360f;
 
                 Vector3 angularVel = (axis * (angle * Mathf.Deg2Rad)) / dt;
-                // Convert world angular velocity into local camera/target space
                 Vector3 localAngularVel = Quaternion.Inverse(rawTargetRot) * angularVel;
 
-                // Sway target offsets: pitch/yaw produce positional roll/translate (X/Y) & rotational lag
                 Vector3 targetSwayPos = new Vector3(
                     Mathf.Clamp(-localAngularVel.y * swayPosAmount, -swayMaxPosOffset, swayMaxPosOffset),
                     Mathf.Clamp(-localAngularVel.x * swayPosAmount, -swayMaxPosOffset, swayMaxPosOffset),
@@ -176,7 +175,6 @@ public class PlayerInventory : MonoBehaviour
         lastTargetPos = rawTargetPos;
         lastTargetRot = rawTargetRot;
 
-        // Apply procedural bob & sway relative to targetTransform in local camera space
         Vector3 finalPos = rawTargetPos;
         Quaternion finalRot = rawTargetRot;
 
@@ -190,15 +188,30 @@ public class PlayerInventory : MonoBehaviour
             }
 
             Vector3 totalLocalOffset = localBobOffset + currentSwayPosOffset;
-            finalPos = rawTargetPos + targetTransform.TransformVector(totalLocalOffset);
+            desiredPos = rawTargetPos + targetTransform.TransformVector(totalLocalOffset);
             finalRot = rawTargetRot * Quaternion.Euler(currentSwayRotOffset);
+
+            // --- ANTI-CLIPPING LOGIC ---
+            // Raycast from the camera down to the desired position to stop clipping
+            Vector3 origin = Camera.main != null ? Camera.main.transform.position : (transform.position + Vector3.up * 1.5f);
+            Vector3 direction = desiredPos - origin;
+            float distance = direction.magnitude;
+
+            // If a wall is in the way, pull the item inward based on the hit point
+            if (Physics.SphereCast(origin, itemCollisionRadius, direction.normalized, out RaycastHit hit, distance, obstacleLayerMask, QueryTriggerInteraction.Ignore))
+            {
+                finalPos = hit.point + (hit.normal * itemCollisionRadius);
+            }
+            else
+            {
+                finalPos = desiredPos;
+            }
         }
 
         if (currentState == InventoryState.PickingUp)
         {
             pickupElapsedTime += Time.deltaTime;
             float t = pickupDuration > 0f ? Mathf.Clamp01(pickupElapsedTime / pickupDuration) : 1f;
-            // Smooth step interpolation for visually non-snapping pickup curve
             float smoothT = t * t * (3f - 2f * t);
 
             Vector3 interpolatedPos = Vector3.Lerp(pickupStartPos, finalPos, smoothT);
@@ -236,7 +249,6 @@ public class PlayerInventory : MonoBehaviour
         currentlyHeldItem = item;
         currentState = InventoryState.PickingUp;
 
-        // Reset procedural motion tracking state
         Transform targetTransform = holdPoint != null ? holdPoint : transform;
         lastTargetPos = targetTransform.position;
         lastTargetRot = targetTransform.rotation;
@@ -246,7 +258,6 @@ public class PlayerInventory : MonoBehaviour
         currentSwayPosOffset = Vector3.zero;
         currentSwayRotOffset = Vector3.zero;
 
-        // Save physics properties before modifying
         savedIsKinematic = rb.isKinematic;
         savedUseGravity = rb.useGravity;
         savedDrag = rb.drag;
@@ -256,7 +267,6 @@ public class PlayerInventory : MonoBehaviour
         savedCollisionDetectionMode = rb.collisionDetectionMode;
         savedMaxAngularVelocity = rb.maxAngularVelocity;
 
-        // Configure kinematic item hold
         if (!rb.isKinematic)
         {
             rb.velocity = Vector3.zero;
@@ -265,7 +275,6 @@ public class PlayerInventory : MonoBehaviour
         rb.isKinematic = true;
         rb.useGravity = false;
 
-        // Initialize pickup animation tracking
         pickupStartPos = rb.position;
         pickupStartRot = rb.rotation;
         pickupElapsedTime = 0f;
@@ -296,11 +305,16 @@ public class PlayerInventory : MonoBehaviour
         PickupItem itemToThrow = currentlyHeldItem;
         Rigidbody rb = itemToThrow != null ? itemToThrow.Rb : null;
 
+        // Force an update to a safe position BEFORE restoring colliders
+        if (rb != null)
+        {
+            rb.position = currentlyHeldItem.transform.position;
+        }
+
         RestorePlayerCollisions();
         RestoreHeldItemColliders();
-
-        // Restore dynamic state before applying launch velocity
         RestoreRigidbodyProperties(rb);
+
         if (rb != null)
         {
             rb.isKinematic = false;
@@ -480,7 +494,6 @@ public class PlayerInventory : MonoBehaviour
         currentlyHeldItem = null;
         currentState = InventoryState.Empty;
 
-        // Reset motion state tracking
         bobTimer = 0f;
         smoothedSpeed = 0f;
         currentBobWeight = 0f;
