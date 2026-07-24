@@ -12,13 +12,11 @@ public class CameraLookAtEventTrigger : MonoBehaviour
     [SerializeField] private Slider progressBarr;
     [SerializeField] private TextMeshProUGUI description;
     [SerializeField] private Transform playerCamera;
-
-
+    [SerializeField] private PlayerInventory cachedInventory;
 
     private string defaultDescription = "USE/INTERACT",handsFullDescription = "[HANDS FULL]";
     public Event lastEvent;
     private Coroutine eventProgressCoroutine;
-    
 
     private void OnEnable()
     {
@@ -29,6 +27,19 @@ public class CameraLookAtEventTrigger : MonoBehaviour
     {
         if(Input.GetKeyDown(KeyCode.E))
             EventAction();
+    }
+
+    private PlayerInventory GetInventory()
+    {
+        if (cachedInventory == null)
+        {
+            cachedInventory = PlayerInventory.Instance;
+            if (cachedInventory == null)
+            {
+                cachedInventory = FindObjectOfType<PlayerInventory>();
+            }
+        }
+        return cachedInventory;
     }
 
     private void setActiveForArray(bool state)
@@ -42,8 +53,6 @@ public class CameraLookAtEventTrigger : MonoBehaviour
         }
     }
 
-
-
     private void handleRayCastMiss()
     {
         setActiveForArray(false);
@@ -53,14 +62,34 @@ public class CameraLookAtEventTrigger : MonoBehaviour
 
     }
 
+    private bool IsPickupEvent(Event evt)
+    {
+        if (evt == null) return false;
+        return evt.GetComponentInChildren<ActionPickupItem>() != null;
+    }
+
     public void EventAction()
     {
-       
+        PlayerInventory inventory = GetInventory();
+
+        if (lastEvent != null && IsPickupEvent(lastEvent))
+        {
+            lastEvent.Action();
+            if (!lastEvent.IsWaitEvent())
+                lastEvent = null;
+            return;
+        }
+
+        if (inventory != null && inventory.HasItem)
+        {
+            Vector3 throwDir = playerCamera != null ? playerCamera.forward : transform.forward;
+            inventory.ThrowItem(throwDir);
+            return;
+        }
+
         if (lastEvent == null)//|| (lastEvent.limitForHeavy && inventory.CarryHeavyItem))
             return;
 
-     
-        
         lastEvent.Action();
         if(!lastEvent.IsWaitEvent())
             lastEvent = null;
@@ -153,8 +182,4 @@ public class CameraLookAtEventTrigger : MonoBehaviour
         }
         StopEventProgress();
     }
-
-  
-
-
 }
