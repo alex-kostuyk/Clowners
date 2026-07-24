@@ -34,6 +34,9 @@ public class ControlConsoles : MonoBehaviour
 
     private void OnValidate()
     {
+        if(_buttonsPositions.Length > 0)
+            return;
+
         _buttonsPositions = GetComponentsInChildren<ConsoleButton>(true)
             .Select(button => button.transform)
             .ToArray();
@@ -64,16 +67,30 @@ public class ControlConsoles : MonoBehaviour
     }
 
     private void shuffleButtonsPositions()
+
     {
+
         if (_buttonsPositions == null || _buttonsPositions.Length < 2) return;
 
+
+
         for (int i = _buttonsPositions.Length - 1; i > 0; i--)
+
         {
+
             int randomIndex = UnityEngine.Random.Range(0, i + 1);
 
+
+
             Vector3 tempPosition = _buttonsPositions[i].position;
+
             _buttonsPositions[i].position = _buttonsPositions[randomIndex].position;
+
             _buttonsPositions[randomIndex].position = tempPosition;
+
         }
+
     }
+
+
 }
