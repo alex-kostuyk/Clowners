@@ -10,12 +10,12 @@ public class CameraLookAtEventTrigger : MonoBehaviour
     [SerializeField] private LayerMask hitLayer;
     [SerializeField] private GameObject[] EventUI;
     [SerializeField] private Slider progressBarr;
-    [SerializeField] private TextMeshProUGUI discription;
+    [SerializeField] private TextMeshProUGUI description;
     [SerializeField] private Transform playerCamera;
 
 
 
-    private string defaultDiscription = "USE/INTERACT",handsFullDiscription = "[HANDS FULL]";
+    private string defaultDescription = "USE/INTERACT",handsFullDescription = "[HANDS FULL]";
     public Event lastEvent;
     private Coroutine eventProgressCoroutine;
     
@@ -48,8 +48,8 @@ public class CameraLookAtEventTrigger : MonoBehaviour
     {
         setActiveForArray(false);
         StopEventProgress();
-        discription.text = defaultDiscription;
-        discription.gameObject.SetActive(false);
+        description.text = defaultDescription;
+        description.gameObject.SetActive(false);
 
     }
 
@@ -122,9 +122,9 @@ public class CameraLookAtEventTrigger : MonoBehaviour
                        /* if (lastEvent.limitForHeavy && inventory.CarryHeavyItem)
                             discription.text = handsFullDiscription;
                         else*/
-                    discription.text =  lastEvent.Discription==""?defaultDiscription: lastEvent.Discription;
+                    description.text =  lastEvent.Discription==""?defaultDescription: lastEvent.Discription;
 
-                    discription.gameObject.SetActive(true);
+                    description.gameObject.SetActive(true);
                 }
                 else
                     handleRayCastMiss();
