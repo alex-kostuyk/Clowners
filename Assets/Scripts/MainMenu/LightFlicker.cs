@@ -1,83 +1,82 @@
 using UnityEngine;
+using VLB;
 
 /// <summary>
-/// Randomly flickers a light's intensity to simulate unstable/old fluorescent lighting.
-/// Attach to any GameObject with a Light component, or assign lights manually.
+/// Handles individual noise-based flickering for a single light and optional VolumetricLightBeamSD.
 /// </summary>
 public class LightFlicker : MonoBehaviour
 {
     [Header("Flicker Settings")]
     [Tooltip("How much the intensity can drop (0 = no flicker, 1 = can go fully off)")]
     [Range(0f, 1f)]
-    [SerializeField] private float flickerAmount = 0.15f;
+    [SerializeField] private float flickerAmount = 0.85f;
 
     [Tooltip("How fast the flicker changes (higher = more erratic)")]
-    [SerializeField] private float flickerSpeed = 8f;
+    [SerializeField] private float flickerSpeed = 25f;
+
+    [Header("Volumetric Beam Settings")]
+    [Tooltip("Base center value for VolumetricLightBeamSD.intensityMultiplier")]
+    [SerializeField] private float baseBeamMultiplier = 0.12f;
 
     [Header("Occasional Dropout")]
     [Tooltip("Chance per second of a brief full dropout")]
-    [SerializeField] private float dropoutChancePerSecond = 0.05f;
-    [SerializeField] private float dropoutDuration = 0.08f;
+    [SerializeField] private float dropoutChancePerSecond = 0.35f;
+    [SerializeField] private float dropoutDuration = 0.15f;
 
     [Header("References")]
-    [SerializeField] private Light[] lights;
+    [SerializeField] private Light targetLight;
+    [SerializeField] private VolumetricLightBeamSD targetBeam;
 
-    private float[] _baseIntensities;
+    private float _baseLightIntensity;
     private float _dropoutTimer;
     private float _noiseOffset;
 
     private void Awake()
     {
-        if (lights == null || lights.Length == 0)
-        {
-            var l = GetComponent<Light>();
-            if (l != null) lights = new Light[] { l };
-        }
+        if (targetLight == null)
+            targetLight = GetComponent<Light>();
 
-        if (lights != null && lights.Length > 0)
-        {
-            _baseIntensities = new float[lights.Length];
-            for (int i = 0; i < lights.Length; i++)
-            {
-                if (lights[i] != null)
-                    _baseIntensities[i] = lights[i].intensity;
-            }
-        }
+        if (targetBeam == null)
+            targetBeam = GetComponent<VolumetricLightBeamSD>();
 
-        _noiseOffset = Random.Range(0f, 100f);
+        if (targetLight != null)
+            _baseLightIntensity = targetLight.intensity;
+
+        _noiseOffset = Random.Range(0f, 1000f);
     }
 
     private void Update()
     {
-        if (lights == null) return;
+        float currentMult = 1f;
 
         // Check for dropout
         if (_dropoutTimer > 0f)
         {
             _dropoutTimer -= Time.deltaTime;
-            for (int i = 0; i < lights.Length; i++)
-            {
-                if (lights[i] != null)
-                    lights[i].intensity = _baseIntensities[i] * 0.05f;
-            }
-            return;
+            currentMult = 0.05f;
         }
-
-        // Random dropout trigger
-        if (Random.value < dropoutChancePerSecond * Time.deltaTime)
+        else if (Random.value < dropoutChancePerSecond * Time.deltaTime)
         {
             _dropoutTimer = dropoutDuration;
-            return;
+            currentMult = 0.05f;
+        }
+        else
+        {
+            // Perlin noise flicker with random offset per instance
+            float noise = Mathf.PerlinNoise(Time.time * flickerSpeed + _noiseOffset, 0f);
+            currentMult = 1f - (noise * flickerAmount);
         }
 
-        // Perlin noise flicker
-        float noise = Mathf.PerlinNoise(Time.time * flickerSpeed + _noiseOffset, 0f);
-        float flickerMult = 1f - (noise * flickerAmount);
-
-        for (int i = 0; i < lights.Length; i++)
+        // Apply to light
+        if (targetLight != null)
         {
-            if (lights[i] != null)
-                lights[i].intensity = _baseIntensities[i] * flickerMult;
+            targetLight.intensity = _baseLightIntensity * currentMult;
+        }
+
+        // Apply ONLY to intensityMultiplier centered around baseBeamMultiplier (0.12)
+        if (targetBeam != null)
+        {
+            targetBeam.intensityMultiplier = baseBeamMultiplier * currentMult;
         }
     }
 }
