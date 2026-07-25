@@ -13,6 +13,7 @@ public class MeteoriteEye : MonoBehaviour
 
     [SerializeField] private float _idleAngleRange = 15f;
     [SerializeField] private float _detectionAngle = 60f;
+    [SerializeField] private float _maxTrackingAngle = 90f;
     [SerializeField, Range(0f, 1f)] private float _idleMoveChance = 0.2f;
 
     private Quaternion _initialRotation;
@@ -48,7 +49,19 @@ public class MeteoriteEye : MonoBehaviour
 
                 if (directionToTarget != Vector3.zero)
                 {
-                    targetRotation = Quaternion.LookRotation(directionToTarget);
+                    // Check if target is within max tracking angle
+                    Vector3 forward = _initialRotation * Vector3.forward;
+                    float angle = Vector3.Angle(forward, directionToTarget);
+
+                    if (angle <= _maxTrackingAngle)
+                    {
+                        targetRotation = Quaternion.LookRotation(directionToTarget);
+                    }
+                    else
+                    {
+                        // Target is behind us — fall back to idle
+                        targetRotation = _currentIdleRotation;
+                    }
                 }
                 else
                 {
