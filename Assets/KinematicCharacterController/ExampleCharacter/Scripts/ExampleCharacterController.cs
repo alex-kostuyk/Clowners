@@ -9,6 +9,7 @@ namespace KinematicCharacterController.Examples
     public enum CharacterState
     {
         Default,
+        Climbing,
     }
 
     public enum OrientationMethod
@@ -86,6 +87,15 @@ namespace KinematicCharacterController.Examples
         private bool _shouldBeCrouching = false;
         private bool _isCrouching = false;
 
+        // Climbing
+        [Header("Climbing")]
+        public float ClimbingSpeed = 4f;
+        public float LadderJumpOffSpeed = 6f;
+
+        private Ladder _activeLadder;
+        private float _climbInput;
+        private bool _ladderJumpRequested;
+
         private Vector3 lastInnerNormal = Vector3.zero;
         private Vector3 lastOuterNormal = Vector3.zero;
 
@@ -120,6 +130,14 @@ namespace KinematicCharacterController.Examples
                     {
                         break;
                     }
+                case CharacterState.Climbing:
+                    {
+                        Motor.SetGroundSolvingActivation(false);
+                        _jumpRequested = false;
+                        _jumpConsumed = false;
+                        _ladderJumpRequested = false;
+                        break;
+                    }
             }
         }
 
@@ -132,6 +150,11 @@ namespace KinematicCharacterController.Examples
             {
                 case CharacterState.Default:
                     {
+                        break;
+                    }
+                case CharacterState.Climbing:
+                    {
+                        Motor.SetGroundSolvingActivation(true);
                         break;
                     }
             }
@@ -194,6 +217,15 @@ namespace KinematicCharacterController.Examples
                             _shouldBeCrouching = false;
                         }
 
+                        break;
+                    }
+                case CharacterState.Climbing:
+                    {
+                        _climbInput = inputs.MoveAxisForward; // W/S for up/down
+                        if (inputs.JumpDown)
+                        {
+                            _ladderJumpRequested = true;
+                        }
                         break;
                     }
             }
@@ -267,6 +299,14 @@ namespace KinematicCharacterController.Examples
                         {
                             Vector3 smoothedGravityDir = Vector3.Slerp(currentUp, Vector3.up, 1 - Mathf.Exp(-BonusOrientationSharpness * deltaTime));
                             currentRotation = Quaternion.FromToRotation(currentUp, smoothedGravityDir) * currentRotation;
+                        }
+                        break;
+                    }
+                case CharacterState.Climbing:
+                    {
+                        if (_activeLadder != null)
+                        {
+                            currentRotation = Quaternion.LookRotation(-_activeLadder.transform.forward, Motor.CharacterUp);
                         }
                         break;
                     }
@@ -385,6 +425,28 @@ namespace KinematicCharacterController.Examples
                         }
                         break;
                     }
+                case CharacterState.Climbing:
+                    {
+                        currentVelocity = Vector3.zero;
+
+                        if (_activeLadder != null)
+                        {
+                            // Handle jump off ladder first
+                            if (_ladderJumpRequested)
+                            {
+                                Vector3 jumpDir = _activeLadder.transform.forward + Motor.CharacterUp;
+                                currentVelocity = jumpDir.normalized * LadderJumpOffSpeed;
+                                Motor.ForceUnground();
+                                DismountLadder();
+                                _ladderJumpRequested = false;
+                                break;
+                            }
+
+                            // Climb along ladder axis (up direction)
+                            currentVelocity = _activeLadder.transform.up * _climbInput * ClimbingSpeed;
+                        }
+                        break;
+                    }
             }
         }
 
@@ -446,6 +508,38 @@ namespace KinematicCharacterController.Examples
                         }
                         break;
                     }
+                case CharacterState.Climbing:
+                    {
+                        if (_activeLadder != null)
+                        {
+                            float onSegmentState;
+                            _activeLadder.ClosestPointOnLadderSegment(Motor.TransientPosition, out onSegmentState);
+
+                            // Auto-release at top when climbing up
+                            if (onSegmentState > 0f && _climbInput > 0f)
+                            {
+                                if (_activeLadder.TopReleasePoint != null)
+                                {
+                                    Motor.SetPositionAndRotation(
+                                        _activeLadder.TopReleasePoint.position,
+                                        _activeLadder.TopReleasePoint.rotation);
+                                }
+                                DismountLadder();
+                            }
+                            // Auto-release at bottom when climbing down
+                            else if (onSegmentState < 0f && _climbInput < 0f)
+                            {
+                                if (_activeLadder.BottomReleasePoint != null)
+                                {
+                                    Motor.SetPositionAndRotation(
+                                        _activeLadder.BottomReleasePoint.position,
+                                        _activeLadder.BottomReleasePoint.rotation);
+                                }
+                                DismountLadder();
+                            }
+                        }
+                        break;
+                    }
             }
         }
 
@@ -464,14 +558,16 @@ namespace KinematicCharacterController.Examples
 
         public bool IsColliderValidForCollisions(Collider coll)
         {
-            if (IgnoredColliders.Count == 0)
-            {
-                return true;
-            }
-
-            if (IgnoredColliders.Contains(coll))
+            if (IgnoredColliders.Count > 0 && IgnoredColliders.Contains(coll))
             {
                 return false;
+            }
+
+            // Ignore ladder colliders while climbing
+            if (CurrentCharacterState == CharacterState.Climbing && _activeLadder != null)
+            {
+                if (coll.gameObject == _activeLadder.gameObject || coll.transform.IsChildOf(_activeLadder.transform))
+                    return false;
             }
 
             return true;
@@ -494,7 +590,29 @@ namespace KinematicCharacterController.Examples
                         _internalVelocityAdd += velocity;
                         break;
                     }
+                case CharacterState.Climbing:
+                    // Ignore external velocity while climbing
+                    break;
             }
+        }
+
+        public void MountLadder(Ladder ladder)
+        {
+            _activeLadder = ladder;
+            TransitionToState(CharacterState.Climbing);
+
+            // Snap player to ladder
+            float onSegmentState;
+            Vector3 closestPoint = _activeLadder.ClosestPointOnLadderSegment(Motor.TransientPosition, out onSegmentState);
+            Motor.SetPositionAndRotation(
+                closestPoint + (_activeLadder.transform.forward * 0.35f),
+                Quaternion.LookRotation(-_activeLadder.transform.forward, Motor.CharacterUp));
+        }
+
+        public void DismountLadder()
+        {
+            _activeLadder = null;
+            TransitionToState(CharacterState.Default);
         }
 
         public void ProcessHitStabilityReport(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, Vector3 atCharacterPosition, Quaternion atCharacterRotation, ref HitStabilityReport hitStabilityReport)
