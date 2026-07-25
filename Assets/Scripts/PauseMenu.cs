@@ -11,6 +11,7 @@ public class PauseMenu : MonoBehaviour
     [SerializeField] private Button resetButton;
     [SerializeField] private Button settingsButton;
     [SerializeField] private Button returnToMenuButton;
+    [SerializeField] private SettingsMenu settingsMenu;
 
     private bool _isPaused;
     private ExamplePlayer _player;
@@ -32,7 +33,11 @@ public class PauseMenu : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            if (_isPaused)
+            if (settingsMenu != null && settingsMenu.IsVisible)
+            {
+                settingsMenu.Hide();
+            }
+            else if (_isPaused)
                 ResumeGame();
             else
                 PauseGame();
@@ -68,8 +73,12 @@ public class PauseMenu : MonoBehaviour
 
     private void OnSettingsPressed()
     {
-        // TODO: implement settings menu
-        Debug.Log("Settings button pressed - not implemented yet");
+        if (pausePanel != null) pausePanel.SetActive(false);
+        if (settingsMenu != null)
+        {
+            settingsMenu.OnBack = () => { if (pausePanel != null) pausePanel.SetActive(true); };
+            settingsMenu.Show();
+        }
     }
 
     private void OnReturnToMenuPressed()

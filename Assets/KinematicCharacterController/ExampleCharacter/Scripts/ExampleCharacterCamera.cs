@@ -28,7 +28,8 @@ namespace KinematicCharacterController.Examples
         public float MinVerticalAngle = -90f;
         [Range(-90f, 90f)]
         public float MaxVerticalAngle = 90f;
-        public float RotationSpeed = 1f;
+        public float RotationSpeedX = 1f;
+        public float RotationSpeedY = 1f;
         public float RotationSharpness = 10000f;
         public bool RotateWithPhysicsMover = false;
 
@@ -95,12 +96,12 @@ namespace KinematicCharacterController.Examples
                 }
 
                 // Process rotation input
-                Quaternion rotationFromInput = Quaternion.Euler(FollowTransform.up * (rotationInput.x * RotationSpeed));
+                Quaternion rotationFromInput = Quaternion.Euler(FollowTransform.up * (rotationInput.x * RotationSpeedX));
                 PlanarDirection = rotationFromInput * PlanarDirection;
                 PlanarDirection = Vector3.Cross(FollowTransform.up, Vector3.Cross(PlanarDirection, FollowTransform.up));
                 Quaternion planarRot = Quaternion.LookRotation(PlanarDirection, FollowTransform.up);
 
-                _targetVerticalAngle -= (rotationInput.y * RotationSpeed);
+                _targetVerticalAngle -= (rotationInput.y * RotationSpeedY);
                 _targetVerticalAngle = Mathf.Clamp(_targetVerticalAngle, MinVerticalAngle, MaxVerticalAngle);
                 Quaternion verticalRot = Quaternion.Euler(_targetVerticalAngle, 0, 0);
                 Quaternion targetRotation = Quaternion.Slerp(Transform.rotation, planarRot * verticalRot, 1f - Mathf.Exp(-RotationSharpness * deltaTime));
