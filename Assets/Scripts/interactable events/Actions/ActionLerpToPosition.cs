@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class ActionLerpToPosition : MonoBehaviour, IAction
 {
-    [SerializeField] private Transform target, transformToLerp,startPosition;
+    [SerializeField] private Transform targetPosition, transformToLerp,startPosition;
     [SerializeField] private float seconds = 3;
 
     public  void StartAction()
@@ -15,8 +15,7 @@ public class ActionLerpToPosition : MonoBehaviour, IAction
     }
     
     private IEnumerator lerp()
-    {      
-
+    {
         if(transformToLerp == null)
             yield break;
 
@@ -28,22 +27,22 @@ public class ActionLerpToPosition : MonoBehaviour, IAction
         while (elapsedTime < seconds)
         {
             float t = elapsedTime / seconds;
-            transformToLerp.position = Vector3.Lerp(initialPosition, target.position, t);
-            transformToLerp.rotation = Quaternion.Lerp(initialRotation, target.rotation, t);
-            transformToLerp.localScale = Vector3.Lerp(initialScale, target.localScale, t);
+            transformToLerp.position = Vector3.Lerp(initialPosition, targetPosition.position, t);
+            transformToLerp.rotation = Quaternion.Lerp(initialRotation, targetPosition.rotation, t);
+            transformToLerp.localScale = Vector3.Lerp(initialScale, targetPosition.localScale, t);
 
             elapsedTime += Time.deltaTime;
             yield return  new WaitForFixedUpdate(); 
         }
 
     
-        transformToLerp.position = target.position;
-        transformToLerp.rotation = target.rotation;
+        transformToLerp.position = targetPosition.position;
+        transformToLerp.rotation = targetPosition.rotation;
     }
 
     public void SetTarget(Transform targetValue)
     {
-        target = targetValue;
+        targetPosition = targetValue;
     }
         
     

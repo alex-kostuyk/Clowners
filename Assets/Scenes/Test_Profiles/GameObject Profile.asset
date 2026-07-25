@@ -25,7 +25,7 @@ MonoBehaviour:
   speed:
     overrideState: 1
     value: 0.145
-  shader: {fileID: 0}
+  shader: {fileID: 4800000, guid: 7942e0da7d5d9024b8d5e8b47f1504ad, type: 3}
 --- !u!114 &-4820103686560139584
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -1384,6 +1384,42 @@ MonoBehaviour:
       - 0.5
       - 0.5
       - 0.5
+--- !u!114 &-4201907331307032941
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 479a7432c78add14f87841bf50afc9e1, type: 3}
+  m_Name: HueShift3D
+  m_EditorClassIdentifier: 
+  active: 0
+  enabled:
+    overrideState: 1
+    value: 0
+  colorSource:
+    overrideState: 0
+    value: 0
+  gradientTex:
+    overrideState: 0
+    value: {fileID: 0}
+    defaultState: 1
+  intensity:
+    overrideState: 1
+    value: 1
+  speed:
+    overrideState: 0
+    value: 0.3
+  size:
+    overrideState: 0
+    value: 1
+  geoInfluence:
+    overrideState: 0
+    value: 5
+  shader: {fileID: 4800000, guid: 2f746b3f42e41224e81e476b3bace759, type: 3}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1402,6 +1438,7 @@ MonoBehaviour:
   - {fileID: 1997974802867520926}
   - {fileID: -4820103686560139584}
   - {fileID: -4428004100233809964}
+  - {fileID: -4201907331307032941}
 --- !u!114 &1947503476570221479
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -1456,4 +1493,4 @@ MonoBehaviour:
   value:
     overrideState: 1
     value: 15
-  shader: {fileID: 0}
+  shader: {fileID: 4800000, guid: 407dc05735867744dbd881f1604f9b4b, type: 3}

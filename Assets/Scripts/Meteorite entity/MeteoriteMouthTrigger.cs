@@ -1,18 +1,43 @@
+using KinematicCharacterController.Examples;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
-public class MeteoritMouthTrigger : MonoBehaviour
+public class MeteoriteMouthTrigger : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
+    [SerializeField]
+    private UnityEvent _onTrigger,_onEatPlayer;
+
+    private RequestType _rememberedFoodType;
+    private bool _lastWasFood = false;
+
+    private void OnTriggerEnter(Collider other)
     {
-        
+        _onTrigger?.Invoke();
+
+        if (other.TryGetComponent(out ExampleCharacterController player))
+        {
+            _onEatPlayer?.Invoke();
+            Destroy(player.transform.root.gameObject);
+            return;
+        }
+
+        if (other.TryGetComponent(out MeteoriteFoodTag foodTag))
+        {
+            _rememberedFoodType = foodTag.FoodType;
+            SendRequest();
+            _lastWasFood = true;
+            Destroy(other.gameObject);
+        }
     }
 
-    // Update is called once per frame
-    void Update()
+    public void SendRequest()
     {
-        
+        if (MeteoriteEntity.Instance != null && _lastWasFood)
+        {
+            MeteoriteEntity.Instance.TryToSatisfyRequest(_rememberedFoodType);
+            _lastWasFood = false;
+        }
     }
 }

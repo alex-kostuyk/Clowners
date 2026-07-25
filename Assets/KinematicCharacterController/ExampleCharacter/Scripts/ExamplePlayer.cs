@@ -67,9 +67,7 @@ namespace KinematicCharacterController.Examples
 
 
             
-#if UNITY_WEBGL
-        scrollInput = 0f;
-#endif
+
 
             // Apply inputs to the camera
             CharacterCamera.UpdateWithInput(Time.deltaTime, 0, lookInputVector);

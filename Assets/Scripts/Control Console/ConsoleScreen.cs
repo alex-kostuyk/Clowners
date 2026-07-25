@@ -14,11 +14,23 @@ public class ConsoleScreen : MonoBehaviour
     [SerializeField]
     private Slider _entityStateSlider;
     [SerializeField]
+    private Image _entitySliderFillImage;
+    [SerializeField]
+    private Gradient _stabilityGradient;
+    [SerializeField]
+    private TextMeshProUGUI _stabilityStatusText;
+    [SerializeField]
     private TextMeshProUGUI _secondsLeftText;
     [SerializeField]
     private TextMeshProUGUI _binaryText;
     [SerializeField]
     private float _binaryUpdateInterval = 0.1f;
+
+    [Header("Status Thresholds")]
+    [SerializeField, Range(0f, 1f)]
+    private float _goodThreshold = 0.66f;
+    [SerializeField, Range(0f, 1f)]
+    private float _midThreshold = 0.33f;
 
     private int _maxSeconds;
     private Coroutine _binaryRoutine;
@@ -28,6 +40,7 @@ public class ConsoleScreen : MonoBehaviour
         ControlConsoles.OnActivate += HandleActivate;
         ControlConsoles.OnDeactivate += HandleDeactivate;
         ControlConsoles.OnCountdownTick += HandleCountdownTick;
+        MeteoriteEntity.OnStabilityChange += HandleStabilityChange;
 
         if (_binaryText != null)
         {
@@ -40,6 +53,7 @@ public class ConsoleScreen : MonoBehaviour
         ControlConsoles.OnActivate -= HandleActivate;
         ControlConsoles.OnDeactivate -= HandleDeactivate;
         ControlConsoles.OnCountdownTick -= HandleCountdownTick;
+        MeteoriteEntity.OnStabilityChange -= HandleStabilityChange;
 
         if (_binaryRoutine != null)
         {
@@ -97,6 +111,45 @@ public class ConsoleScreen : MonoBehaviour
         if (_rechargingSlider != null)
         {
             _rechargingSlider.value = secondsLeft;
+        }
+    }
+
+    private void HandleStabilityChange(float stability)
+    {
+        stability = Mathf.Clamp01(stability);
+
+        if (_entityStateSlider != null)
+        {
+            _entityStateSlider.value = stability;
+        }
+
+        Color stateColor = Color.white;
+        if (_stabilityGradient != null)
+        {
+            stateColor = _stabilityGradient.Evaluate(stability);
+        }
+
+        if (_entitySliderFillImage != null)
+        {
+            _entitySliderFillImage.color = stateColor;
+        }
+
+        if (_stabilityStatusText != null)
+        {
+            _stabilityStatusText.color = stateColor;
+
+            if (stability >= _goodThreshold)
+            {
+                _stabilityStatusText.text = "GOOD";
+            }
+            else if (stability >= _midThreshold)
+            {
+                _stabilityStatusText.text = "MID";
+            }
+            else
+            {
+                _stabilityStatusText.text = "BAD";
+            }
         }
     }
 }

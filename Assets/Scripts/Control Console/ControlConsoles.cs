@@ -67,29 +67,23 @@ public class ControlConsoles : MonoBehaviour
     }
 
     private void shuffleButtonsPositions()
-
     {
-
         if (_buttonsPositions == null || _buttonsPositions.Length < 2) return;
 
-
-
         for (int i = _buttonsPositions.Length - 1; i > 0; i--)
-
         {
-
             int randomIndex = UnityEngine.Random.Range(0, i + 1);
 
-
-
+            // Swap positions
             Vector3 tempPosition = _buttonsPositions[i].position;
-
             _buttonsPositions[i].position = _buttonsPositions[randomIndex].position;
-
             _buttonsPositions[randomIndex].position = tempPosition;
 
+            // Swap rotations
+            Quaternion tempRotation = _buttonsPositions[i].rotation;
+            _buttonsPositions[i].rotation = _buttonsPositions[randomIndex].rotation;
+            _buttonsPositions[randomIndex].rotation = tempRotation;
         }
-
     }
 
 

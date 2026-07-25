@@ -8,6 +8,10 @@ public class MeteoriteBlobAnimator : MonoBehaviour
     public float Speed = 2f;
     public float MaxOffset = 0.5f;
 
+    [Header("Choppiness Settings")]
+    [Tooltip("Lower values make the movement choppier (e.g., 5 to 12 for a stop-motion feel).")]
+    public float StepsPerSecond = 8f;
+
     private struct BoneData
     {
         public Transform Bone;
@@ -43,13 +47,17 @@ public class MeteoriteBlobAnimator : MonoBehaviour
     {
         if (_boneDataArray == null) return;
 
+        // "Step" the time so it updates in discrete chunks rather than a smooth flow
+        float steppedTime = Mathf.Floor(Time.time * StepsPerSecond) / StepsPerSecond;
+
         for (int i = 0; i < _boneDataArray.Length; i++)
         {
             var data = _boneDataArray[i];
 
             if (data.Bone != null)
             {
-                float sineWave = Mathf.Sin((Time.time * Speed) + data.TimeOffset);
+                // Calculate the sine wave using the stepped time instead of Time.time
+                float sineWave = Mathf.Sin((steppedTime * Speed) + data.TimeOffset);
                 Vector3 currentOffset = data.RandomAxis * (sineWave * MaxOffset);
 
                 data.Bone.localPosition = data.InitialLocalPosition + currentOffset;
