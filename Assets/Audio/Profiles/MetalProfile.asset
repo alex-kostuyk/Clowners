@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 981f4668bbcd3508581154cd4c51ea70, type: 3}
+  m_Name: MetalProfile
+  m_EditorClassIdentifier: 
+  TagName: Metal
+  WalkClips:
+  - {fileID: 8300000, guid: 0666e66cfa388874e9d00586f8f433b1, type: 3}
+  - {fileID: 8300000, guid: cef6b2378975ec8469c1ab9f1d68fc33, type: 3}
+  - {fileID: 8300000, guid: 66fa875e3fbfa8342825f1c59e63b044, type: 3}
+  - {fileID: 8300000, guid: eebd2f55ca8ab7a44865a0f4d1192adb, type: 3}
+  LandClips:
+  - {fileID: 8300000, guid: 27f695c10c1096844b9663ced12cb595, type: 3}
+  - {fileID: 8300000, guid: 6f920392b103ceb4caf2eb74a4af6415, type: 3}
+  JumpClips: []
