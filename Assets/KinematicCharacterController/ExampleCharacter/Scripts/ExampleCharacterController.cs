@@ -91,10 +91,17 @@ namespace KinematicCharacterController.Examples
         [Header("Climbing")]
         public float ClimbingSpeed = 4f;
         public float LadderJumpOffSpeed = 6f;
+        public float MountDuration = 0.25f;
 
         private Ladder _activeLadder;
         private float _climbInput;
         private bool _ladderJumpRequested;
+        private bool _isMountingLadder;
+        private float _mountTimer;
+        private Vector3 _mountStartPosition;
+        private Quaternion _mountStartRotation;
+        private Vector3 _mountTargetPosition;
+        private Quaternion _mountTargetRotation;
 
         private Vector3 lastInnerNormal = Vector3.zero;
         private Vector3 lastOuterNormal = Vector3.zero;
@@ -221,7 +228,15 @@ namespace KinematicCharacterController.Examples
                     }
                 case CharacterState.Climbing:
                     {
-                        _climbInput = inputs.MoveAxisForward; // W/S for up/down
+                        if (_isMountingLadder)
+                        {
+                            _climbInput = 0f;
+                        }
+                        else
+                        {
+                            _climbInput = inputs.MoveAxisForward; // W/S for up/down
+                        }
+
                         if (inputs.JumpDown)
                         {
                             _ladderJumpRequested = true;
@@ -304,7 +319,11 @@ namespace KinematicCharacterController.Examples
                     }
                 case CharacterState.Climbing:
                     {
-                        if (_activeLadder != null)
+                        if (_isMountingLadder)
+                        {
+                            currentRotation = Quaternion.Slerp(_mountStartRotation, _mountTargetRotation, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(_mountTimer / MountDuration)));
+                        }
+                        else if (_activeLadder != null)
                         {
                             currentRotation = Quaternion.LookRotation(-_activeLadder.transform.forward, Motor.CharacterUp);
                         }
@@ -434,6 +453,7 @@ namespace KinematicCharacterController.Examples
                             // Handle jump off ladder first
                             if (_ladderJumpRequested)
                             {
+                                _isMountingLadder = false;
                                 Vector3 jumpDir = _activeLadder.transform.forward + Motor.CharacterUp;
                                 currentVelocity = jumpDir.normalized * LadderJumpOffSpeed;
                                 Motor.ForceUnground();
@@ -442,8 +462,30 @@ namespace KinematicCharacterController.Examples
                                 break;
                             }
 
-                            // Climb along ladder axis (up direction)
-                            currentVelocity = _activeLadder.transform.up * _climbInput * ClimbingSpeed;
+                            if (_isMountingLadder)
+                            {
+                                _mountTimer += deltaTime;
+                                float t = Mathf.Clamp01(_mountTimer / MountDuration);
+                                float smoothT = Mathf.SmoothStep(0f, 1f, t);
+
+                                Vector3 nextPosition = Vector3.Lerp(_mountStartPosition, _mountTargetPosition, smoothT);
+                                Vector3 moveAmount = nextPosition - Motor.TransientPosition;
+                                if (deltaTime > 0f)
+                                {
+                                    currentVelocity = moveAmount / deltaTime;
+                                }
+
+                                if (t >= 1f)
+                                {
+                                    _isMountingLadder = false;
+                                    Motor.SetTransientPosition(_mountTargetPosition);
+                                }
+                            }
+                            else
+                            {
+                                // Climb along ladder axis (up direction)
+                                currentVelocity = _activeLadder.transform.up * _climbInput * ClimbingSpeed;
+                            }
                         }
                         break;
                     }
@@ -599,19 +641,25 @@ namespace KinematicCharacterController.Examples
         public void MountLadder(Ladder ladder)
         {
             _activeLadder = ladder;
-            TransitionToState(CharacterState.Climbing);
 
-            // Snap player to ladder
             float onSegmentState;
             Vector3 closestPoint = _activeLadder.ClosestPointOnLadderSegment(Motor.TransientPosition, out onSegmentState);
-            Motor.SetPositionAndRotation(
-                closestPoint + (_activeLadder.transform.forward * 0.35f),
-                Quaternion.LookRotation(-_activeLadder.transform.forward, Motor.CharacterUp));
+
+            _mountStartPosition = Motor.TransientPosition;
+            _mountStartRotation = Motor.TransientRotation;
+            _mountTargetPosition = closestPoint + (_activeLadder.transform.forward * 0.35f);
+            _mountTargetRotation = Quaternion.LookRotation(-_activeLadder.transform.forward, Motor.CharacterUp);
+
+            _mountTimer = 0f;
+            _isMountingLadder = true;
+
+            TransitionToState(CharacterState.Climbing);
         }
 
         public void DismountLadder()
         {
             _activeLadder = null;
+            _isMountingLadder = false;
             TransitionToState(CharacterState.Default);
         }
 
