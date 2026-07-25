@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 981f4668bbcd3508581154cd4c51ea70, type: 3}
+  m_Name: LadderProfile
+  m_EditorClassIdentifier: 
+  TagName: Ladder
+  WalkClips:
+  - {fileID: 8300000, guid: 4e94780ce51481e4ab31e1d1758b3dc4, type: 3}
+  - {fileID: 8300000, guid: 60fafeea41c0f9549bd79d4c165603eb, type: 3}
+  - {fileID: 8300000, guid: 20413eaa134ec4a4786487422a9f4344, type: 3}
+  LandClips: []
+  JumpClips: []

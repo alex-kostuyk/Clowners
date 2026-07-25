@@ -74,6 +74,9 @@ namespace KinematicCharacterController.Examples
 
         public CharacterState CurrentCharacterState { get; private set; }
 
+        public System.Action OnCharacterLanded;
+        public System.Action OnCharacterLeftGround;
+
         private Collider[] _probedColliders = new Collider[8];
         private RaycastHit[] _probedHits = new RaycastHit[8];
         private Vector3 _moveInputVector;
@@ -621,10 +624,12 @@ namespace KinematicCharacterController.Examples
 
         protected void OnLanded()
         {
+            OnCharacterLanded?.Invoke();
         }
 
         protected void OnLeaveStableGround()
         {
+            OnCharacterLeftGround?.Invoke();
         }
 
         public void OnDiscreteCollisionDetected(Collider hitCollider)

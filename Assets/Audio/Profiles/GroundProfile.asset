@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 981f4668bbcd3508581154cd4c51ea70, type: 3}
+  m_Name: GroundProfile
+  m_EditorClassIdentifier: 
+  TagName: Ground
+  WalkClips:
+  - {fileID: 8300000, guid: b953183d700f17f438a1da9686e37cd0, type: 3}
+  - {fileID: 8300000, guid: 6b3d4b4bb577b424e9333844e4bddf80, type: 3}
+  - {fileID: 8300000, guid: a55690933a67fdd47af923adbf6ad1c9, type: 3}
+  - {fileID: 8300000, guid: 8e0d1721cb622b54c8f4a7905565f370, type: 3}
+  LandClips:
+  - {fileID: 8300000, guid: 27f695c10c1096844b9663ced12cb595, type: 3}
+  - {fileID: 8300000, guid: 6f920392b103ceb4caf2eb74a4af6415, type: 3}
+  JumpClips: []

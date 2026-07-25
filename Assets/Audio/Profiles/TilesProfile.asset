@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 981f4668bbcd3508581154cd4c51ea70, type: 3}
+  m_Name: TilesProfile
+  m_EditorClassIdentifier: 
+  TagName: Tiles
+  WalkClips:
+  - {fileID: 8300000, guid: b457501afbc299042aeec06b3c603a67, type: 3}
+  - {fileID: 8300000, guid: a8084af8fbd4b5644981920a70490053, type: 3}
+  - {fileID: 8300000, guid: 57c8042f013928947a9693586ea488d6, type: 3}
+  - {fileID: 8300000, guid: 771f1211e3629cb448ecb00ad8ad55f2, type: 3}
+  LandClips:
+  - {fileID: 8300000, guid: 27f695c10c1096844b9663ced12cb595, type: 3}
+  - {fileID: 8300000, guid: 6f920392b103ceb4caf2eb74a4af6415, type: 3}
+  JumpClips: []
