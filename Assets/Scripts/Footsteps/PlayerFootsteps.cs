@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using KinematicCharacterController.Examples;
 
@@ -26,6 +27,7 @@ namespace Footsteps
 
         private float _distanceWalked;
         private float _climbDistanceWalked;
+        private readonly Dictionary<AudioClip[], int> _clipIndices = new Dictionary<AudioClip[], int>();
 
         private void Reset()
         {
@@ -117,7 +119,7 @@ namespace Footsteps
                 ? profile.WalkClips
                 : (_defaultProfile != null ? _defaultProfile.WalkClips : null);
 
-            PlayRandomClip(clips);
+            PlaySequentialClip(clips);
         }
 
         private void PlayClimbStepSound()
@@ -127,7 +129,7 @@ namespace Footsteps
                 ? profile.WalkClips
                 : (_defaultProfile != null ? _defaultProfile.WalkClips : null);
 
-            PlayRandomClip(clips);
+            PlaySequentialClip(clips);
         }
 
         private void HandleLanded()
@@ -139,7 +141,7 @@ namespace Footsteps
                 ? profile.LandClips
                 : (_defaultProfile != null ? _defaultProfile.LandClips : null);
 
-            PlayRandomClip(clips);
+            PlaySequentialClip(clips);
         }
 
         private void HandleLeftGround()
@@ -151,14 +153,26 @@ namespace Footsteps
                 ? profile.JumpClips
                 : (_defaultProfile != null ? _defaultProfile.JumpClips : null);
 
-            PlayRandomClip(clips);
+            PlaySequentialClip(clips);
         }
 
-        private void PlayRandomClip(AudioClip[] clips)
+        private void PlaySequentialClip(AudioClip[] clips)
         {
             if (clips == null || clips.Length == 0 || _audioSource == null) return;
 
-            AudioClip clip = clips[Random.Range(0, clips.Length)];
+            if (!_clipIndices.TryGetValue(clips, out int index))
+            {
+                index = 0;
+            }
+
+            if (index < 0 || index >= clips.Length)
+            {
+                index = 0;
+            }
+
+            AudioClip clip = clips[index];
+            _clipIndices[clips] = (index + 1) % clips.Length;
+
             if (clip != null)
             {
                 _audioSource.pitch = Random.Range(_minPitch, _maxPitch);
