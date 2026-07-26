@@ -43,13 +43,12 @@ public class PlayerInventory : MonoBehaviour
     [SerializeField] private float swaySmoothing = 12f;
 
     [Header("Anti-Clipping Settings")]
-    [SerializeField] private LayerMask obstacleLayerMask = 1; // Default layer. Set this to include your walls/floors.
-    [SerializeField] private float itemCollisionRadius = 0.15f; // How thick the item is to prevent clipping.
+    [SerializeField] private LayerMask obstacleLayerMask = 1;
+    [SerializeField] private float itemCollisionRadius = 0.15f;
 
     private InventoryState currentState = InventoryState.Empty;
     private PickupItem currentlyHeldItem;
 
-    // Saved Rigidbody properties to restore on drop/throw/release
     private bool savedIsKinematic;
     private bool savedUseGravity;
     private float savedDrag;
@@ -59,19 +58,15 @@ public class PlayerInventory : MonoBehaviour
     private CollisionDetectionMode savedCollisionDetectionMode;
     private float savedMaxAngularVelocity;
 
-    // Colliders cached to disable during hold & restore on release
     private readonly List<KeyValuePair<Collider, bool>> savedHeldColliders = new List<KeyValuePair<Collider, bool>>();
 
-    // Pickup interpolation state
     private Vector3 pickupStartPos;
     private Quaternion pickupStartRot;
     private float pickupElapsedTime;
 
-    // Colliders cached to ignore/restore player collisions
     private Collider[] cachedOwnerColliders;
     private readonly List<KeyValuePair<Collider, Collider>> ignoredColliderPairs = new List<KeyValuePair<Collider, Collider>>();
 
-    // Procedural Motion Tracking
     private Vector3 lastTargetPos;
     private Quaternion lastTargetRot;
     private float bobTimer;
@@ -191,13 +186,10 @@ public class PlayerInventory : MonoBehaviour
             desiredPos = rawTargetPos + targetTransform.TransformVector(totalLocalOffset);
             finalRot = rawTargetRot * Quaternion.Euler(currentSwayRotOffset);
 
-            // --- ANTI-CLIPPING LOGIC ---
-            // Raycast from the camera down to the desired position to stop clipping
             Vector3 origin = Camera.main != null ? Camera.main.transform.position : (transform.position + Vector3.up * 1.5f);
             Vector3 direction = desiredPos - origin;
             float distance = direction.magnitude;
 
-            // If a wall is in the way, pull the item inward based on the hit point
             if (Physics.SphereCast(origin, itemCollisionRadius, direction.normalized, out RaycastHit hit, distance, obstacleLayerMask, QueryTriggerInteraction.Ignore))
             {
                 finalPos = hit.point + (hit.normal * itemCollisionRadius);
@@ -305,7 +297,6 @@ public class PlayerInventory : MonoBehaviour
         PickupItem itemToThrow = currentlyHeldItem;
         Rigidbody rb = itemToThrow != null ? itemToThrow.Rb : null;
 
-        // Force an update to a safe position BEFORE restoring colliders
         if (rb != null)
         {
             rb.position = currentlyHeldItem.transform.position;
@@ -373,8 +364,7 @@ public class PlayerInventory : MonoBehaviour
     {
         if (currentlyHeldItem == item)
         {
-            ClearHeldStateInternal(restorePhysics: false);
-            Destroy(item.gameObject);
+            ClearHeldStateInternal(restorePhysics: false, destroyItem: true);
         }
     }
 
@@ -385,7 +375,7 @@ public class PlayerInventory : MonoBehaviour
 
     private void OnDestroy()
     {
-        ClearHeldStateInternal(restorePhysics: true);
+        ClearHeldStateInternal(restorePhysics: false, destroyItem: true);
         if (Instance == this)
         {
             Instance = null;
@@ -486,7 +476,7 @@ public class PlayerInventory : MonoBehaviour
         rb.maxAngularVelocity = savedMaxAngularVelocity;
     }
 
-    private void ClearHeldStateInternal(bool restorePhysics)
+    private void ClearHeldStateInternal(bool restorePhysics, bool destroyItem = false)
     {
         RestorePlayerCollisions();
         RestoreHeldItemColliders();
@@ -503,7 +493,12 @@ public class PlayerInventory : MonoBehaviour
         if (item != null)
         {
             item.OnReleased();
-            if (restorePhysics)
+
+            if (destroyItem)
+            {
+                Destroy(item.gameObject);
+            }
+            else if (restorePhysics)
             {
                 RestoreRigidbodyProperties(item.Rb);
             }

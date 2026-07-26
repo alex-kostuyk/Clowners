@@ -29,6 +29,19 @@ public class MeteoriteEntity : MonoBehaviour
     private RequestProperty _currentRequest;
     private bool _isInstableTriggered;
 
+    private HashSet<RequestType> _availableFoodTypes = new HashSet<RequestType>();
+
+    private readonly HashSet<RequestType> _foodRequestTypes = new HashSet<RequestType>
+    {
+        RequestType.Praise,
+        RequestType.Pizza,
+        RequestType.Burger,
+        RequestType.Beer,
+        RequestType.Cigarettes,
+        RequestType.Watermelon,
+        RequestType.Apple
+    };
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -42,6 +55,7 @@ public class MeteoriteEntity : MonoBehaviour
 
     private void Start()
     {
+        CacheAvailableFoodInScene();
         AssignRandomRequest();
     }
 
@@ -62,6 +76,8 @@ public class MeteoriteEntity : MonoBehaviour
         CheckInstability();
     }
 
+    public bool IsThisTypeCorrect(RequestType type) => (type == _currentRequest.RequestType);
+
     public void TryToSatisfyRequest(RequestType type)
     {
         if (_currentRequest == null) return;
@@ -70,18 +86,23 @@ public class MeteoriteEntity : MonoBehaviour
         {
             _stability = Mathf.Clamp01(_stability + _correctAnswerBonus);
             _onRightAnswer?.Invoke();
+
+            OnStabilityChange?.Invoke(_stability);
+
+            if (!CheckInstability())
+            {
+                AssignRandomRequest();
+            }
         }
         else
         {
             _stability = Mathf.Clamp01(_stability - _wrongAnswerPenalty);
             _onWrongAnswer?.Invoke();
-        }
 
-        OnStabilityChange?.Invoke(_stability);
+            OnStabilityChange?.Invoke(_stability);
 
-        if (!CheckInstability())
-        {
-            AssignRandomRequest();
+            CheckInstability();
+            // Request is NOT changed on wrong answer
         }
     }
 
@@ -96,13 +117,67 @@ public class MeteoriteEntity : MonoBehaviour
         return false;
     }
 
+    private void CacheAvailableFoodInScene()
+    {
+        _availableFoodTypes.Clear();
+        MeteoriteFoodTag[] foodTags = FindObjectsOfType<MeteoriteFoodTag>();
+
+        foreach (var food in foodTags)
+        {
+            if (food != null)
+            {
+                _availableFoodTypes.Add(food.FoodType);
+            }
+        }
+    }
+
     private void AssignRandomRequest()
     {
         if (RequestProperties == null || RequestProperties.Length == 0) return;
 
-        int randomIndex = UnityEngine.Random.Range(0, RequestProperties.Length);
-        _currentRequest = RequestProperties[randomIndex];
+        CacheAvailableFoodInScene();
 
+        List<RequestProperty> validRequests = new List<RequestProperty>();
+
+        foreach (var req in RequestProperties)
+        {
+            // Check food availability constraint
+            if (_foodRequestTypes.Contains(req.RequestType))
+            {
+                if (_availableFoodTypes.Contains(req.RequestType))
+                {
+                    validRequests.Add(req);
+                }
+            }
+            else
+            {
+                // Non-food requests are always valid
+                validRequests.Add(req);
+            }
+        }
+
+        if (validRequests.Count == 0) return;
+
+        // Filter out the current request so it can't repeat consecutively
+        List<RequestProperty> nonRepeatingRequests = new List<RequestProperty>();
+        if (_currentRequest != null)
+        {
+            foreach (var req in validRequests)
+            {
+                if (req.RequestType != _currentRequest.RequestType)
+                {
+                    nonRepeatingRequests.Add(req);
+                }
+            }
+        }
+
+        // Use the filtered list if we have other options; otherwise fall back to validRequests
+        List<RequestProperty> poolToPickFrom = nonRepeatingRequests.Count > 0 ? nonRepeatingRequests : validRequests;
+
+        int randomIndex = UnityEngine.Random.Range(0, poolToPickFrom.Count);
+        _currentRequest = poolToPickFrom[randomIndex];
+
+        Debug.Log(_currentRequest.RequestType.ToString());
         OnRequestChange?.Invoke(_currentRequest);
     }
 }

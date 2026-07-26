@@ -10,7 +10,6 @@ public class MeteoriteMouthTrigger : MonoBehaviour
     private UnityEvent _onTrigger,_onEatPlayer;
 
     private RequestType _rememberedFoodType;
-    private bool _lastWasFood = false;
 
     private void OnTriggerEnter(Collider other)
     {
@@ -26,18 +25,11 @@ public class MeteoriteMouthTrigger : MonoBehaviour
         if (other.TryGetComponent(out MeteoriteFoodTag foodTag))
         {
             _rememberedFoodType = foodTag.FoodType;
-            SendRequest();
-            _lastWasFood = true;
-            Destroy(other.gameObject);
-        }
-    }
 
-    public void SendRequest()
-    {
-        if (MeteoriteEntity.Instance != null && _lastWasFood)
-        {
-            MeteoriteEntity.Instance.TryToSatisfyRequest(_rememberedFoodType);
-            _lastWasFood = false;
+            if (MeteoriteEntity.Instance != null)
+                MeteoriteEntity.Instance.TryToSatisfyRequest(_rememberedFoodType);
+         
+            Destroy(other.gameObject);
         }
     }
 }

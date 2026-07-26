@@ -14,8 +14,8 @@ public class ControlConsoles : MonoBehaviour
     [SerializeField]
     private Transform[] _buttonsPositions;
 
-    [SerializeField]
-    private int _cooldownDuration = 7;
+  
+    private float _cooldownDuration = Constants.TimeToReportIfActionIsCorrect;
 
     private Coroutine _timerCoroutine;
 
@@ -49,7 +49,7 @@ public class ControlConsoles : MonoBehaviour
             StopCoroutine(_timerCoroutine);
         }
 
-        _timerCoroutine = StartCoroutine(CooldownRoutine(_cooldownDuration));
+        _timerCoroutine = StartCoroutine(CooldownRoutine((int)_cooldownDuration));
     }
 
     private IEnumerator CooldownRoutine(int totalSeconds)

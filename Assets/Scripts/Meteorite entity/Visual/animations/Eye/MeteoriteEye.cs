@@ -6,10 +6,12 @@ public class MeteoriteEye : MonoBehaviour
 {
     public Transform Target;
     public Vector3 TargetOffset;
+    public float _pauseDuration = 0.3f;
+    public float _jitterAngle = 1f;
+
 
     [SerializeField] private float _stepDuration = 0.05f;
-    [SerializeField] private float _pauseDuration = 0.3f;
-    [SerializeField] private float _jitterAngle = 1f;
+    
 
     [SerializeField] private float _idleAngleRange = 15f;
     [SerializeField] private float _detectionAngle = 60f;
@@ -18,13 +20,13 @@ public class MeteoriteEye : MonoBehaviour
 
     private Quaternion _initialRotation;
     private Quaternion _currentIdleRotation;
-    private ExampleCharacterController _player;
+    private EyeCameraTarget _player;
 
     private void Start()
     {
         _initialRotation = transform.rotation;
         _currentIdleRotation = _initialRotation;
-        _player = Object.FindFirstObjectByType<ExampleCharacterController>();
+        _player = Object.FindFirstObjectByType<EyeCameraTarget>();
 
         StartCoroutine(EyeStepRoutine());
     }
