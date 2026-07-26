@@ -15,10 +15,8 @@ public class SettingsMenu : MonoBehaviour
     [SerializeField] private TextMeshProUGUI volumeLabel;
 
     [Header("Sensitivity")]
-    [SerializeField] private Slider sensitivityXSlider;
-    [SerializeField] private Slider sensitivityYSlider;
-    [SerializeField] private TextMeshProUGUI sensitivityXLabel;
-    [SerializeField] private TextMeshProUGUI sensitivityYLabel;
+    [SerializeField] private Slider sensitivitySlider;
+    [SerializeField] private TextMeshProUGUI sensitivityLabel;
 
     [Header("Post Processing")]
     [SerializeField] private Toggle postProcessingToggle;
@@ -30,8 +28,25 @@ public class SettingsMenu : MonoBehaviour
 
     private void Awake()
     {
-        _camera = FindObjectOfType<ExampleCharacterCamera>();
-        _postProcessVolume = FindObjectOfType<PostProcessVolume>();
+        InitializeSettings();
+        SetupListeners();
+
+        if (settingsPanel != null)
+            settingsPanel.SetActive(false);
+    }
+
+    private void OnEnable()
+    {
+        InitializeSettings();
+        SetupListeners();
+    }
+
+    private void InitializeSettings()
+    {
+        if (_camera == null)
+            _camera = FindObjectOfType<ExampleCharacterCamera>();
+        if (_postProcessVolume == null)
+            _postProcessVolume = FindObjectOfType<PostProcessVolume>();
 
         // Volume slider
         if (volumeSlider != null)
@@ -39,43 +54,56 @@ public class SettingsMenu : MonoBehaviour
             volumeSlider.minValue = 0f;
             volumeSlider.maxValue = 1f;
             volumeSlider.value = AudioListener.volume;
-            volumeSlider.onValueChanged.AddListener(OnVolumeChanged);
             UpdateVolumeLabel();
         }
 
-        // Sensitivity X slider
-        if (sensitivityXSlider != null)
+        // Sensitivity slider
+        if (sensitivitySlider != null)
         {
-            sensitivityXSlider.minValue = 0.1f;
-            sensitivityXSlider.maxValue = 5f;
-            sensitivityXSlider.value = _camera != null ? _camera.RotationSpeedX : 1f;
-            sensitivityXSlider.onValueChanged.AddListener(OnSensitivityXChanged);
-            UpdateSensitivityXLabel();
-        }
-
-        // Sensitivity Y slider
-        if (sensitivityYSlider != null)
-        {
-            sensitivityYSlider.minValue = 0.1f;
-            sensitivityYSlider.maxValue = 5f;
-            sensitivityYSlider.value = _camera != null ? _camera.RotationSpeedY : 1f;
-            sensitivityYSlider.onValueChanged.AddListener(OnSensitivityYChanged);
-            UpdateSensitivityYLabel();
+            sensitivitySlider.minValue = 0.1f;
+            sensitivitySlider.maxValue = 5f;
+            sensitivitySlider.value = _camera != null ? _camera.RotationSpeedX : 1f;
+            UpdateSensitivityLabel();
         }
 
         // Post-processing toggle
         if (postProcessingToggle != null)
         {
             postProcessingToggle.isOn = _postProcessVolume != null && _postProcessVolume.enabled;
+        }
+    }
+
+    private void SetupListeners()
+    {
+        if (volumeSlider != null)
+        {
+            volumeSlider.onValueChanged.RemoveListener(OnVolumeChanged);
+            volumeSlider.onValueChanged.AddListener(OnVolumeChanged);
+        }
+
+        if (sensitivitySlider != null)
+        {
+            sensitivitySlider.onValueChanged.RemoveListener(OnSensitivityChanged);
+            sensitivitySlider.onValueChanged.AddListener(OnSensitivityChanged);
+        }
+
+        if (postProcessingToggle != null)
+        {
+            postProcessingToggle.onValueChanged.RemoveListener(OnPostProcessingToggled);
             postProcessingToggle.onValueChanged.AddListener(OnPostProcessingToggled);
         }
 
-        // Back button
         if (backButton != null)
+        {
+            backButton.onClick.RemoveListener(Hide);
             backButton.onClick.AddListener(Hide);
+        }
 
-        if (settingsPanel != null)
-            settingsPanel.SetActive(false);
+    }
+
+    private void Update()
+    {
+        SetupListeners();
     }
 
     public void Show()
@@ -97,16 +125,14 @@ public class SettingsMenu : MonoBehaviour
         UpdateVolumeLabel();
     }
 
-    private void OnSensitivityXChanged(float value)
+    private void OnSensitivityChanged(float value)
     {
-        if (_camera != null) _camera.RotationSpeedX = value;
-        UpdateSensitivityXLabel();
-    }
-
-    private void OnSensitivityYChanged(float value)
-    {
-        if (_camera != null) _camera.RotationSpeedY = value;
-        UpdateSensitivityYLabel();
+        if (_camera != null)
+        {
+            _camera.RotationSpeedX = value;
+            _camera.RotationSpeedY = value;
+        }
+        UpdateSensitivityLabel();
     }
 
     private void OnPostProcessingToggled(bool isOn)
@@ -120,15 +146,9 @@ public class SettingsMenu : MonoBehaviour
             volumeLabel.text = $"Volume: {Mathf.RoundToInt(AudioListener.volume * 100)}%";
     }
 
-    private void UpdateSensitivityXLabel()
+    private void UpdateSensitivityLabel()
     {
-        if (sensitivityXLabel != null)
-            sensitivityXLabel.text = $"Sensitivity X: {sensitivityXSlider.value:F1}";
-    }
-
-    private void UpdateSensitivityYLabel()
-    {
-        if (sensitivityYLabel != null)
-            sensitivityYLabel.text = $"Sensitivity Y: {sensitivityYSlider.value:F1}";
+        if (sensitivityLabel != null && sensitivitySlider != null)
+            sensitivityLabel.text = $"Sensitivity: {sensitivitySlider.value:F1}";
     }
 }
