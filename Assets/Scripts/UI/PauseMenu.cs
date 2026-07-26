@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using KinematicCharacterController.Examples;
 
 public class PauseMenu : MonoBehaviour
 {
@@ -12,35 +11,114 @@ public class PauseMenu : MonoBehaviour
     [SerializeField] private Button settingsButton;
     [SerializeField] private Button returnToMenuButton;
     [SerializeField] private SettingsMenu settingsMenu;
+    [SerializeField] private string menuSceneName = "Main menu";
 
     private bool _isPaused;
-    private ExamplePlayer _player;
-    private CameraLookAtEventTrigger _interactionTrigger;
+    private CursorLockMode _previousLockState = CursorLockMode.None;
 
     private void Awake()
     {
-        if (continueButton != null) continueButton.onClick.AddListener(ResumeGame);
-        if (resetButton != null) resetButton.onClick.AddListener(ResetGame);
-        // Settings and Return to Menu are wired but do nothing yet
-        if (settingsButton != null) settingsButton.onClick.AddListener(OnSettingsPressed);
-        if (returnToMenuButton != null) returnToMenuButton.onClick.AddListener(OnReturnToMenuPressed);
-
+        SetupListeners();
         if (pausePanel != null) pausePanel.SetActive(false);
         _isPaused = false;
+        _previousLockState = Cursor.lockState;
+    }
+
+    private void OnEnable()
+    {
+        SetupListeners();
+    }
+
+    private void SetupListeners()
+    {
+        if (continueButton != null)
+        {
+            continueButton.onClick.RemoveListener(ResumeGame);
+            continueButton.onClick.AddListener(ResumeGame);
+        }
+
+        if (resetButton != null)
+        {
+            resetButton.onClick.RemoveListener(ResetGame);
+            resetButton.onClick.AddListener(ResetGame);
+        }
+
+        if (settingsButton != null)
+        {
+            settingsButton.onClick.RemoveListener(OnSettingsPressed);
+            settingsButton.onClick.AddListener(OnSettingsPressed);
+        }
+
+        if (returnToMenuButton != null)
+        {
+            returnToMenuButton.onClick.RemoveListener(OnReturnToMenuPressed);
+            returnToMenuButton.onClick.AddListener(OnReturnToMenuPressed);
+        }
+
     }
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
+        SetupListeners();
+
+        bool escapePressed = Input.GetKeyDown(KeyCode.Escape);
+        bool pPressed = Input.GetKeyDown(KeyCode.P);
+        bool cursorUnlockedInEditor = false;
+
+#if UNITY_EDITOR
+        if (!_isPaused && _previousLockState == CursorLockMode.Locked && Cursor.lockState != CursorLockMode.Locked)
+        {
+            cursorUnlockedInEditor = true;
+        }
+        _previousLockState = Cursor.lockState;
+#endif
+
+        if (pPressed)
+        {
+            HandlePauseToggle();
+        }
+        else if (escapePressed)
         {
             if (settingsMenu != null && settingsMenu.IsVisible)
             {
                 settingsMenu.Hide();
             }
-            else if (_isPaused)
-                ResumeGame();
             else
+            {
+                HandlePauseToggle();
+            }
+        }
+        else if (cursorUnlockedInEditor)
+        {
+            if (!_isPaused)
+            {
                 PauseGame();
+            }
+        }
+    }
+
+    private void LateUpdate()
+    {
+        if (_isPaused)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+    }
+
+    private void HandlePauseToggle()
+    {
+        if (settingsMenu != null && settingsMenu.IsVisible)
+        {
+            settingsMenu.Hide();
+        }
+        else if (_isPaused)
+        {
+            ResumeGame();
+        }
+        else
+        {
+            PauseGame();
         }
     }
 
@@ -50,8 +128,10 @@ public class PauseMenu : MonoBehaviour
         Time.timeScale = 0f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+#if UNITY_EDITOR
+        _previousLockState = Cursor.lockState;
+#endif
         if (pausePanel != null) pausePanel.SetActive(true);
-        SetPlayerInputEnabled(false);
     }
 
     public void ResumeGame()
@@ -60,8 +140,10 @@ public class PauseMenu : MonoBehaviour
         Time.timeScale = 1f;
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+#if UNITY_EDITOR
+        _previousLockState = Cursor.lockState;
+#endif
         if (pausePanel != null) pausePanel.SetActive(false);
-        SetPlayerInputEnabled(true);
     }
 
     private void ResetGame()
@@ -83,22 +165,13 @@ public class PauseMenu : MonoBehaviour
 
     private void OnReturnToMenuPressed()
     {
-        // TODO: implement return to main menu
-        Debug.Log("Return to Game Menu pressed - not implemented yet");
+        Time.timeScale = 1f;
+        _isPaused = false;
+        SceneManager.LoadScene(menuSceneName);
     }
 
     private void OnDestroy()
     {
-        // Ensure timeScale is restored if this object is destroyed
         Time.timeScale = 1f;
-    }
-
-    private void SetPlayerInputEnabled(bool enabled)
-    {
-        if (_player == null) _player = FindObjectOfType<ExamplePlayer>();
-        if (_interactionTrigger == null) _interactionTrigger = FindObjectOfType<CameraLookAtEventTrigger>();
-
-        if (_player != null) _player.enabled = enabled;
-        if (_interactionTrigger != null) _interactionTrigger.enabled = enabled;
     }
 }
