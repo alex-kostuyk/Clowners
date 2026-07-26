@@ -26,6 +26,11 @@ public class SettingsMenu : MonoBehaviour
 
     public System.Action OnBack;
 
+    // PlayerPrefs Keys
+    private const string VolumeKey = "Settings_Volume";
+    private const string SensitivityKey = "Settings_Sensitivity";
+    private const string PostProcessingKey = "Settings_PostProcessing";
+
     private void Awake()
     {
         InitializeSettings();
@@ -48,28 +53,45 @@ public class SettingsMenu : MonoBehaviour
         if (_postProcessVolume == null)
             _postProcessVolume = FindObjectOfType<PostProcessVolume>();
 
-        // Volume slider
+        // Load saved values or fall back to defaults
+        float savedVolume = PlayerPrefs.GetFloat(VolumeKey, 1f);
+        float savedSensitivity = PlayerPrefs.GetFloat(SensitivityKey, 1f);
+        bool savedPostProcessing = PlayerPrefs.GetInt(PostProcessingKey, 1) == 1;
+
+        // Apply loaded values to game systems
+        AudioListener.volume = savedVolume;
+
+        if (_camera != null)
+        {
+            _camera.RotationSpeedX = savedSensitivity;
+            _camera.RotationSpeedY = savedSensitivity;
+        }
+
+        if (_postProcessVolume != null)
+        {
+            _postProcessVolume.enabled = savedPostProcessing;
+        }
+
+        // Apply loaded values to UI
         if (volumeSlider != null)
         {
             volumeSlider.minValue = 0f;
             volumeSlider.maxValue = 1f;
-            volumeSlider.value = AudioListener.volume;
+            volumeSlider.value = savedVolume;
             UpdateVolumeLabel();
         }
 
-        // Sensitivity slider
         if (sensitivitySlider != null)
         {
             sensitivitySlider.minValue = 0.1f;
             sensitivitySlider.maxValue = 5f;
-            sensitivitySlider.value = _camera != null ? _camera.RotationSpeedX : 1f;
+            sensitivitySlider.value = savedSensitivity;
             UpdateSensitivityLabel();
         }
 
-        // Post-processing toggle
         if (postProcessingToggle != null)
         {
-            postProcessingToggle.isOn = _postProcessVolume != null && _postProcessVolume.enabled;
+            postProcessingToggle.isOn = savedPostProcessing;
         }
     }
 
@@ -98,12 +120,6 @@ public class SettingsMenu : MonoBehaviour
             backButton.onClick.RemoveListener(Hide);
             backButton.onClick.AddListener(Hide);
         }
-
-    }
-
-    private void Update()
-    {
-        SetupListeners();
     }
 
     public void Show()
@@ -122,6 +138,8 @@ public class SettingsMenu : MonoBehaviour
     private void OnVolumeChanged(float value)
     {
         AudioListener.volume = value;
+        PlayerPrefs.SetFloat(VolumeKey, value);
+        PlayerPrefs.Save();
         UpdateVolumeLabel();
     }
 
@@ -132,12 +150,19 @@ public class SettingsMenu : MonoBehaviour
             _camera.RotationSpeedX = value;
             _camera.RotationSpeedY = value;
         }
+
+        PlayerPrefs.SetFloat(SensitivityKey, value);
+        PlayerPrefs.Save();
         UpdateSensitivityLabel();
     }
 
     private void OnPostProcessingToggled(bool isOn)
     {
-        if (_postProcessVolume != null) _postProcessVolume.enabled = isOn;
+        if (_postProcessVolume != null)
+            _postProcessVolume.enabled = isOn;
+
+        PlayerPrefs.SetInt(PostProcessingKey, isOn ? 1 : 0);
+        PlayerPrefs.Save();
     }
 
     private void UpdateVolumeLabel()
