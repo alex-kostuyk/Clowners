@@ -54,13 +54,10 @@ public class PauseMenu : MonoBehaviour
             returnToMenuButton.onClick.RemoveListener(OnReturnToMenuPressed);
             returnToMenuButton.onClick.AddListener(OnReturnToMenuPressed);
         }
-
     }
 
     private void Update()
     {
-        SetupListeners();
-
         bool escapePressed = Input.GetKeyDown(KeyCode.Escape);
         bool pPressed = Input.GetKeyDown(KeyCode.P);
         bool cursorUnlockedInEditor = false;
@@ -126,11 +123,15 @@ public class PauseMenu : MonoBehaviour
     {
         _isPaused = true;
         Time.timeScale = 0f;
+        AudioListener.pause = true;
+
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+
 #if UNITY_EDITOR
         _previousLockState = Cursor.lockState;
 #endif
+
         if (pausePanel != null) pausePanel.SetActive(true);
     }
 
@@ -138,17 +139,22 @@ public class PauseMenu : MonoBehaviour
     {
         _isPaused = false;
         Time.timeScale = 1f;
+        AudioListener.pause = false;
+
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
 #if UNITY_EDITOR
         _previousLockState = Cursor.lockState;
 #endif
+
         if (pausePanel != null) pausePanel.SetActive(false);
     }
 
     private void ResetGame()
     {
         Time.timeScale = 1f;
+        AudioListener.pause = false;
         _isPaused = false;
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
@@ -166,6 +172,7 @@ public class PauseMenu : MonoBehaviour
     private void OnReturnToMenuPressed()
     {
         Time.timeScale = 1f;
+        AudioListener.pause = false;
         _isPaused = false;
         SceneManager.LoadScene(menuSceneName);
     }
@@ -173,5 +180,6 @@ public class PauseMenu : MonoBehaviour
     private void OnDestroy()
     {
         Time.timeScale = 1f;
+        AudioListener.pause = false;
     }
 }
